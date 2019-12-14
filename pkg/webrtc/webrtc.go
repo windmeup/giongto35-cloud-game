@@ -150,6 +150,18 @@ func (w *WebRTC) StartClient(remoteSession string, isMobile bool, iceCandidates 
 	dtrue := true
 	var d0 uint16 = 0
 
+	// User voice chat Track
+	w.connection.OnTrack(func(remoteTrack *webrtc.Track, receiver *webrtc.RTPReceiver) {
+		rtpBuf := make([]byte, 1400)
+		for {
+			i, err := remoteTrack.Read(rtpBuf)
+			if err != nil {
+				_, err = opusTrack.Write(rtpBuf[:i])
+			}
+		}
+
+	})
+
 	// input channel
 	inputTrack, err := w.connection.CreateDataChannel("a", &webrtc.DataChannelInit{
 		Ordered:    &dfalse,

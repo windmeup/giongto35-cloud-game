@@ -160,7 +160,7 @@
     // !to add debounce
     const popup = (msg) => {
         popupBox.html(msg);
-        popupBox.fadeIn().delay(0).fadeOut();
+        popupBox.fadeIn().delay(500).fadeOut();
     };
 
     const onKeyPress = (data) => {
@@ -336,6 +336,7 @@
         rtcp.start(data.stunturn);
         gameList.set(data.games);
     });
+    event.sub(SHOW_ALLOW_MICROPHONE, () => popup('Allow Microphone for In-Game Voice Chat'));
     event.sub(MEDIA_STREAM_SDP_AVAILABLE, (data) => rtcp.setRemoteDescription(data.sdp, gameScreen[0]));
     event.sub(MEDIA_STREAM_READY, () => rtcp.start());
     event.sub(CONNECTION_READY, onConnectionReady);

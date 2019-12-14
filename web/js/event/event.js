@@ -57,6 +57,8 @@ const event = (() => {
 // events
 const LATENCY_CHECK_REQUESTED = 'latencyCheckRequested';
 
+const SHOW_ALLOW_MICROPHONE = 'showAllowMicrophone';
+
 const GAME_ROOM_AVAILABLE = 'gameRoomAvailable';
 const GAME_SAVED = 'gameSaved';
 const GAME_LOADED = 'gameLoaded';
