@@ -44,17 +44,23 @@ const rtcp = (() => {
 
         event.pub(SHOW_ALLOW_MICROPHONE);
 
-        navigator.getUserMedia({video:false, audio:true}, function(stream) {
+        addStreamAudio(connection)
+    };
+
+    async function addStreamAudio(pc) {
+        let stream = null;
+
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({video:false, audio:true});
+
             stream.getTracks().forEach(function(track) {
                 connection.addTrack(track, stream);
             });
-
-        }, function (){
-            event.pub(SHOW_ALLOW_MICROPHONE);
+        } catch(err) {
             log.info("Error getting audio stream from getUserMedia")
-        })
-
-    };
+            log.info(e)
+        }
+    }
 
     const popup = (msg) => {
         popupBox.html(msg);

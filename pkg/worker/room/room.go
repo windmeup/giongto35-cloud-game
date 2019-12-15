@@ -35,6 +35,8 @@ type Room struct {
 	// inputChannel is input stream send to director. This inputChannel is combined
 	// input from webRTC + connection info (player indexc)
 	inputChannel chan<- nanoarch.InputEvent
+	// voiceChannel is voice stream aggregated from all participants and aggregated
+	voiceChannel chan []byte
 	// State of room
 	IsRunning bool
 	// Done channel is to fire exit event when room is closed
@@ -72,11 +74,13 @@ func NewRoom(roomID string, gameName string, videoEncoderType string, onlineStor
 
 	log.Println("Init new room: ", roomID, gameName, gameInfo)
 	inputChannel := make(chan nanoarch.InputEvent, 100)
+	voiceChannel := make(chan []byte, 10)
 
 	room := &Room{
 		ID: roomID,
 
 		inputChannel:  inputChannel,
+		voiceChannel:  voiceChannel,
 		rtcSessions:   []*webrtc.WebRTC{},
 		sessionsLock:  &sync.Mutex{},
 		IsRunning:     true,
@@ -189,6 +193,7 @@ func (r *Room) isGameOnLocal(savepath string) bool {
 func (r *Room) AddConnectionToRoom(peerconnection *webrtc.WebRTC) {
 	peerconnection.AttachRoomID(r.ID)
 	r.rtcSessions = append(r.rtcSessions, peerconnection)
+	peerconnection.VoiceChannel = r.voiceChannel
 
 	go r.startWebRTCSession(peerconnection)
 }
@@ -217,6 +222,7 @@ func (r *Room) startWebRTCSession(peerconnection *webrtc.WebRTC) {
 			// the next 10 belongs to player 2 ...
 			// We standardize and put it to inputChannel (20 bits)
 			select {
+
 			case r.inputChannel <- nanoarch.InputEvent{KeyState: input, PlayerIdx: peerconnection.GameMeta.PlayerIndex}:
 			default:
 			}
@@ -276,6 +282,7 @@ func (r *Room) Close() {
 	}
 	log.Println("Closing input of room ", r.ID)
 	close(r.inputChannel)
+	//close(r.voiceChannel)
 	close(r.Done)
 	// Close here is a bit wrong because this read channel
 	// Just dont close it, let it be gc
