@@ -77,7 +77,7 @@ func (h *Handler) Run() {
 
 func setupOverlordConnection(ohost string, zone string) (*OverlordClient, error) {
 	overlordURL := url.URL{
-		Scheme:   "ws",
+		Scheme:   "wss",
 		Host:     ohost,
 		Path:     "/wso",
 		RawQuery: "zone=" + zone,
