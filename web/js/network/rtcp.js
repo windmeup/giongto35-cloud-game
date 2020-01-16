@@ -29,7 +29,7 @@ const rtcp = (() => {
         inputChannel.onclose = () => log.debug('[rtcp] the input channel has closed');
 
         connection.addTransceiver('video', {'direction': 'recvonly'});
-        connection.addTransceiver('audio', {'direction': 'recvonly'});
+        connection.addTransceiver('audio', {'direction': 'sendrecv'});
 
         connection.oniceconnectionstatechange = ice.onIceConnectionStateChange;
         connection.onicegatheringstatechange = ice.onIceStateChange;
@@ -37,10 +37,34 @@ const rtcp = (() => {
         connection.ontrack = event => mediaStream.addTrack(event.track);
 
         connection.createOffer({offerToReceiveVideo: true, offerToReceiveAudio: true})
-            .then(offer => {
-                log.info(offer.sdp);
-                connection.setLocalDescription(offer).catch(log.error);
+        .then(offer => {
+            log.info(offer.sdp);
+            connection.setLocalDescription(offer).catch(log.error);
+        });
+
+        event.pub(SHOW_ALLOW_MICROPHONE);
+
+        addStreamAudio(connection)
+    };
+
+    async function addStreamAudio(pc) {
+        let stream = null;
+
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({video:false, audio:true});
+
+            stream.getTracks().forEach(function(track) {
+                connection.addTrack(track, stream);
             });
+        } catch(err) {
+            log.info("Error getting audio stream from getUserMedia")
+            log.info(e)
+        }
+    }
+
+    const popup = (msg) => {
+        popupBox.html(msg);
+        popupBox.fadeIn().delay(0).fadeOut();
     };
 
     const ice = (() => {

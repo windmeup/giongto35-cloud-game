@@ -62,6 +62,7 @@ func NewWebRTC() *WebRTC {
 
 		ImageChannel: make(chan []byte, 30),
 		AudioChannel: make(chan []byte, 1),
+		VoiceChannel: nil,
 		InputChannel: make(chan int, 100),
 	}
 	return w
@@ -83,6 +84,7 @@ type WebRTC struct {
 	ImageChannel chan []byte
 	AudioChannel chan []byte
 	InputChannel chan int
+	VoiceChannel chan []byte
 
 	Done     bool
 	lastTime time.Time
@@ -149,6 +151,18 @@ func (w *WebRTC) StartClient(remoteSession string, isMobile bool, iceCandidates 
 	dfalse := false
 	dtrue := true
 	var d0 uint16 = 0
+
+	// User voice chat Track
+	w.connection.OnTrack(func(remoteTrack *webrtc.Track, receiver *webrtc.RTPReceiver) {
+		rtpBuf := make([]byte, 1400)
+		for {
+			i, err := remoteTrack.Read(rtpBuf)
+			if err == nil && w.VoiceChannel != nil {
+				w.VoiceChannel <- rtpBuf[:i]
+			}
+		}
+
+	})
 
 	// input channel
 	inputTrack, err := w.connection.CreateDataChannel("a", &webrtc.DataChannelInit{
@@ -309,6 +323,26 @@ func (w *WebRTC) startStreaming(vp8Track *webrtc.Track, opusTrack *webrtc.Track)
 		}
 	}()
 
+	// send voice
+	// TODO: Use fanout instead using the room voice channel
+	go func() {
+		for {
+			// poll
+			if w.VoiceChannel == nil {
+				time.Sleep(time.Second)
+				continue
+			}
+
+			// if there is new voice channel, send it
+			// try close
+			for rtpBuf := range w.VoiceChannel {
+				if !w.isConnected {
+					return
+				}
+				opusTrack.Write(rtpBuf)
+			}
+		}
+	}()
 }
 
 func (w *WebRTC) calculateFPS() int {
