@@ -135,7 +135,7 @@ func (s *Server) WS(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	c, err := s.userWsUpgrader.Upgrade(w, r, nil)
+	c, err := s.userWsUpgrader.Upgrade(w, r, nil) // 升级 websocket
 	if err != nil {
 		log.Println("Coordinator: [!] WS upgrade:", err)
 		return
@@ -146,17 +146,17 @@ func (s *Server) WS(w http.ResponseWriter, r *http.Request) {
 	for {
 		sessionID = uuid.Must(uuid.NewV4()).String()
 		// check duplicate
-		if _, ok := s.browserClients[sessionID]; !ok {
+		if _, ok := s.browserClients[sessionID]; !ok { // uuid v4 重复的概率极低
 			break
 		}
 	}
 
 	// Create browserClient instance
-	bc := NewBrowserClient(c, sessionID)
+	bc := NewBrowserClient(c, sessionID) // browser client 对应一个浏览器,维持 websocket connection
 	bc.Println("Generated worker ID")
 
 	// Run browser listener first (to capture ping)
-	go bc.Listen()
+	go bc.Listen() // listen 是一个 loop, 处理浏览器发来的消息
 
 	/* Create a session - mapping browserClient with workerClient */
 	var wc *WorkerClient
@@ -237,7 +237,7 @@ func (s *Server) WS(w http.ResponseWriter, r *http.Request) {
 	// Routing browserClient message
 	s.useragentRoutes(bc)
 
-	bc.Send(cws.WSPacket{
+	bc.Send(cws.WSPacket{ // 把调度的结果发给浏览器
 		ID:   "init",
 		Data: createInitPackage(wc.Id, wc.StunTurnServer, s.library.GetAll()),
 	}, nil)
@@ -246,7 +246,7 @@ func (s *Server) WS(w http.ResponseWriter, r *http.Request) {
 	<-bc.Done
 
 	// Notify worker to clean session
-	wc.Send(api.TerminateSessionPacket(sessionID), nil)
+	wc.Send(api.TerminateSessionPacket(sessionID), nil) // 通知 worker clean
 }
 
 func (s *Server) getBestWorkerClient(client *BrowserClient, zone string) (*WorkerClient, error) {
