@@ -232,10 +232,10 @@ func (s *Server) WS(w http.ResponseWriter, r *http.Request) {
 	// Everything is cool
 	// Attach to Server instance with sessionID
 	s.browserClients[sessionID] = bc
-	defer s.cleanBrowser(bc, sessionID)
+	defer s.cleanBrowser(bc, sessionID) // 关闭 bc, 解除 session binding
 
 	// Routing browserClient message
-	s.useragentRoutes(bc)
+	s.useragentRoutes(bc) // 设置各类 message 对应的 handler
 
 	bc.Send(cws.WSPacket{ // 把调度的结果发给浏览器
 		ID:   "init",
@@ -243,7 +243,7 @@ func (s *Server) WS(w http.ResponseWriter, r *http.Request) {
 	}, nil)
 
 	// If peerconnection is done (client.Done is signalled), we close peerconnection
-	<-bc.Done
+	<-bc.Done // blocking util bc done
 
 	// Notify worker to clean session
 	wc.Send(api.TerminateSessionPacket(sessionID), nil) // 通知 worker clean
